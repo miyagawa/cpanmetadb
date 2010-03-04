@@ -65,7 +65,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
       self.response.out.write("FAIL")
       return
 
-    logging.info('Download 02packages.details.txt.gz succeed.')
+    logging.info('Download 02packages.details.txt.gz succeed. Last-Modified: %s' % packages.headers['Last-Modified'])
 
     is_recent = []
     if (not bootstrap):
@@ -126,7 +126,7 @@ class UpdatedPackagesHandler(webapp.RequestHandler):
       pkgs_in_db = query.fetch(10)
       for pkg_in_db in pkgs_in_db:
         if not pkg_in_db.key() in new_keys:
-          logging.debug("Deleting stale %s since it's not in DB" % pkg_in_db.name)
+          logging.debug("Deleting stale %s" % pkg_in_db.name)
           pkg_in_db.delete()
 
     logging.info("Updated %d packages (from %s to %s)" % (len(pkgs), pkgs[0].name, pkgs[-1].name))
