@@ -4,4 +4,5 @@ cron:
   schedule: every 30 minutes synchronized
 - description: Rescan 02packages
   url: /work/fetch_packages/bootstrap
-  schedule: every day 00:05
+  schedule: every day 23:50
+  timezone: America/Los_Angeles

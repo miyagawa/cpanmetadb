@@ -102,7 +102,13 @@ class FetchPackagesHandler(webapp.RequestHandler):
             )
             logging.info("Updated %d packages " % found)
             pkgs = []
-    logging.info("Finishing...")
+
+    taskqueue.add(
+      url='/work/update_packages',
+      payload="\n".join(pkgs)
+    )
+
+    logging.info("Found %d packages. Finishing..." % found)
     self.response.out.write("Download success: %d" % found)
 
 class UpdatedPackagesHandler(webapp.RequestHandler):
