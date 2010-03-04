@@ -57,7 +57,7 @@ class PackageHandler(webapp.RequestHandler):
 
 class FetchPackagesHandler(webapp.RequestHandler):
   @work_queue_only
-  def get(self):
+  def get(self, bootstrap):
     logging.info("Begin downloading 02packages.details.txt.gz")
     packages = urlfetch.fetch("http://cpan.cpantesters.org/modules/02packages.details.txt.gz")
     if packages.status_code != 200:
@@ -67,17 +67,18 @@ class FetchPackagesHandler(webapp.RequestHandler):
 
     logging.info('Download 02packages.details.txt.gz succeed.')
 
-    result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-6h.yaml")
-    if result.status_code != 200:
-      logging.error('Download RECENT-6h.yaml FAIL')
-      self.response.out.write(result.content)
-      return
-    
-    recent = yaml.load(result.content)
     is_recent = []
-    for update in recent['recent']:
-      path = re.sub(r'^id/', r'', update['path'])
-      is_recent.append(path)
+    if (not bootstrap):
+      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-6h.yaml")
+      if result.status_code != 200:
+        logging.error('Download RECENT-6h.yaml FAIL')
+        self.response.out.write(result.content)
+        return
+    
+      recent = yaml.load(result.content)
+      for update in recent['recent']:
+        path = re.sub(r'^id/', r'', update['path'])
+        is_recent.append(path)
     
     file = gzip.GzipFile(fileobj = StringIO.StringIO(packages.content))
 
@@ -91,7 +92,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
         header_is_done = True
       elif header_is_done:
         data = re.split('\s+', line)
-        if data[2] in is_recent:
+        if bootstrap or (data[2] in is_recent):
           pkgs.append(line)
           found = found + 1
           if found % 50 == 0:
@@ -133,7 +134,7 @@ class UpdatedPackagesHandler(webapp.RequestHandler):
 
 def main():
   application = webapp.WSGIApplication([(r'/package/(.*)', PackageHandler),
-                                        ('/work/fetch_packages', FetchPackagesHandler),
+                                        ('/work/fetch_packages/?(.*)', FetchPackagesHandler),
                                         ('/work/update_packages', UpdatedPackagesHandler),
                                         (r'/', MainHandler)
                                         ],
