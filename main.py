@@ -4,12 +4,36 @@ from google.appengine.ext import webapp, db
 from google.appengine.ext.webapp import util
 from google.appengine.api import urlfetch
 from google.appengine.api.labs import taskqueue
+from google.appengine.api import users
 import re
 import gzip
 import StringIO
 import logging
 import urllib
 import yaml
+
+def work_queue_only(func):
+  """Decorator that only allows a request if from cron job, task, or an admin.
+
+  Also allows access if running in development server environment.
+
+  Args:
+    func: A webapp.RequestHandler method.
+
+  Returns:
+    Function that will return a 401 error if not from an authorized source.
+  """
+  def decorated(myself, *args, **kwargs):
+    if ('X-AppEngine-Cron' in myself.request.headers or
+        'X-AppEngine-TaskName' in myself.request.headers or
+        users.is_current_user_admin()):
+      return func(myself, *args, **kwargs)
+    elif users.get_current_user() is None:
+      myself.redirect(users.create_login_url(myself.request.url))
+    else:
+      myself.response.set_status(401)
+      myself.response.out.write('Handler only accessible for work queues')
+  return decorated
 
 class Package(db.Model):
   name = db.StringProperty()
@@ -21,7 +45,6 @@ class MainHandler(webapp.RequestHandler):
     self.response.out.write(open('./index.html').read())
   
 class PackageHandler(webapp.RequestHandler):
-
   def get(self, package):
     query = Package.all()
     query.filter('name = ', urllib.unquote(package))
@@ -31,9 +54,9 @@ class PackageHandler(webapp.RequestHandler):
       self.response.out.write("---\ndist: %s\nversion: %s\n" % (package.distribution, package.version))
     else:
       self.response.set_status(404)
-      self.response.out.write("Not Found")
 
 class FetchPackagesHandler(webapp.RequestHandler):
+  @work_queue_only
   def get(self):
     logging.info("Begin downloading 02packages.details.txt.gz")
     packages = urlfetch.fetch("http://cpan.cpantesters.org/modules/02packages.details.txt.gz")
@@ -82,6 +105,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
     self.response.out.write("Download success: %d" % found)
 
 class UpdatedPackagesHandler(webapp.RequestHandler):
+  @work_queue_only
   def post(self):
     pkgs = []
     for line in self.request.body.split('\n'):
