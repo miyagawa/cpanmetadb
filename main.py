@@ -94,7 +94,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
         if data[2] in is_recent:
           pkgs.append(line)
           found = found + 1
-          if found % 80 == 0:
+          if found % 50 == 0:
             taskqueue.add(
               url='/work/update_packages',
               payload="\n".join(pkgs)
