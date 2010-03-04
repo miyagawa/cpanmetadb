@@ -9,17 +9,17 @@ body { font-size: 1.1em }
 </head>
 <body>
 <div class="container">
-<h1>Yet Another CPAN Meta DB</h1>
+<h1>CPAN Meta DB</h1>
 
 <h2>APIs</h2>
 
 <dl>
 <dt><code>/package/Package::Name</code><dt>
-<dd>Returns the latest distribution and the version string that contains the package in YAML format. Returns 404 Not Found if the package is not found.</dd>
+<dd>Returns the latest distribution that contains the package and its version string ('undef' is a valid version string) in YAML format. Returns 404 status code if the package is not found.</dd>
 </dl>
 
 <div id="footer">
-Created by <a href="http://bulknews.typepad.com/">Tatsuhiko Miyagawa</a> for <a href="http://search.cpan.org/perldoc?App::cpanminus">cpanminus</a>.<br/>
+This is yet another CPAN Meta DB, created by <a href="http://bulknews.typepad.com/">Tatsuhiko Miyagawa</a> for <a href="http://search.cpan.org/perldoc?App::cpanminus">cpanminus</a>.<br/>
 Powered by <a href="http://code.google.com/appengine/">Google AppEngine</a> and the source code is available on <a href="http://github.com/miyagawa/cpanmetadb">github</a>.
 </div>
 
