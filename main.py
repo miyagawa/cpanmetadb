@@ -99,7 +99,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
         header_is_done = True
       elif header_is_done:
         data = re.split('\s+', line)
-        if bootstrap or (data[2] in is_recent):
+        if len(data) == 3 and (bootstrap or (data[2] in is_recent)):
           pkgs.append(line)
           found = found + 1
           if found % 50 == 0:
