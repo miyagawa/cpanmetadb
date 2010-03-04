@@ -4,18 +4,23 @@
 <link rel="stylesheet" href="http://miyagawa.github.com/screen.css" ?>
 <style>
 body { font-size: 1.1em }
-#footer { margin-top: 100px; font-size: 0.9em; text-align: center }
+.info { font-size: 0.9em }
+#footer { margin-top: 100px; font-size: 0.8em; text-align: center }
 </style>
 </head>
 <body>
 <div class="container">
 <h1>CPAN Meta DB</h1>
 
+<p class="info">
+This is (yet another) CPAN metadata database that provides REST API for the CPAN distributions, intended to be used by CPAN clients such as <a href="http://github.com/miyagawa/cpanminus">cpanminus</a>. Currently the only implemented endpoint is the resolver to get distribution file names from package names (a.k.a <code>02packages.details.txt.gz</code>) but there's a plan to implement more to extract information from <code>META.yml</code> etc. See also <a href="http://search.cpan.org/perldoc?CPANDB">CPANDB</a> and <a href="http://search.cpan.org/perldoc?App::CPANIDX">CPANIDX</a> for the similar works.
+</p>
+
 <h2>APIs</h2>
 
 <dl>
-<dt><code>/package/Package::Name</code><dt>
-<dd>Returns the latest distribution that contains the package and its version string ('undef' is a valid version string) in YAML format. Returns 404 status code if the package is not found.</dd>
+<dt><code>/v1.0/package/Package::Name</code><dt>
+<dd>Returns the latest distribution file path that contains the package and its version string ('undef' is a valid version string) in YAML format. Returns 404 status code if the package is not found.</dd>
 </dl>
 
 <div id="footer">
