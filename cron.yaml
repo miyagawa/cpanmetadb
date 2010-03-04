@@ -1,0 +1,4 @@
+cron:
+- description: Fetch 02packages and update
+  url: /work/fetch_packages
+  schedule: every 1 hours
