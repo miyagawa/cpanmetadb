@@ -44,9 +44,9 @@ class FetchPackagesHandler(webapp.RequestHandler):
 
     logging.info('Download 02packages.details.txt.gz succeed.')
 
-    result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-1d.yaml")
+    result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-6h.yaml")
     if result.status_code != 200:
-      logging.error('Download RECENT-1d.yaml FAIL')
+      logging.error('Download RECENT-6h.yaml FAIL')
       self.response.out.write(result.content)
       return
     
