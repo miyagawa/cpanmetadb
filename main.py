@@ -74,10 +74,10 @@ class FetchPackagesHandler(webapp.RequestHandler):
       return
     
     recent = yaml.load(result.content)
-    is_recent = {}
+    is_recent = []
     for update in recent['recent']:
       path = re.sub(r'^id/', r'', update['path'])
-      is_recent[path] = True
+      is_recent.append(path)
     
     file = gzip.GzipFile(fileobj = StringIO.StringIO(packages.content))
 
@@ -105,6 +105,7 @@ class FetchPackagesHandler(webapp.RequestHandler):
     self.response.out.write("Download success: %d" % found)
 
 class UpdatedPackagesHandler(webapp.RequestHandler):
+
   @work_queue_only
   def post(self):
     pkgs = []
@@ -112,10 +113,22 @@ class UpdatedPackagesHandler(webapp.RequestHandler):
       data = re.split('\s+', line)
       pkg = Package(name=data[0], version=data[1], distribution=data[2])
       pkgs.append(pkg)
+
+    new_keys = []
     db.put(pkgs)
+    for p in pkgs:
+      new_keys.append(p.key())
+
+    for p in pkgs:
+      query = Package.all()
+      query.filter('name = ', p.name)
+      pkg_in_db = query.get()
+      if not pkg_in_db.key() in new_keys:
+        logging.debug("Deleting %s since it's not in DB" % pkg_in_db.key())
+        pkg_in_db.delete()
+
     logging.info("Updated %d packages (from %s to %s)" % (len(pkgs), pkgs[0].name, pkgs[-1].name))
     self.response.out.write("Success")
-    
 
 def main():
   application = webapp.WSGIApplication([(r'/package/(.*)', PackageHandler),
