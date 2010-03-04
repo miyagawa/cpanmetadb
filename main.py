@@ -122,10 +122,11 @@ class UpdatedPackagesHandler(webapp.RequestHandler):
     for p in pkgs:
       query = Package.all()
       query.filter('name = ', p.name)
-      pkg_in_db = query.get()
-      if not pkg_in_db.key() in new_keys:
-        logging.debug("Deleting %s since it's not in DB" % pkg_in_db.key())
-        pkg_in_db.delete()
+      pkgs_in_db = query.fetch(10)
+      for pkg_in_db in pkgs_in_db:
+        if not pkg_in_db.key() in new_keys:
+          logging.debug("Deleting stale %s since it's not in DB" % pkg_in_db.name)
+          pkg_in_db.delete()
 
     logging.info("Updated %d packages (from %s to %s)" % (len(pkgs), pkgs[0].name, pkgs[-1].name))
     self.response.out.write("Success")
