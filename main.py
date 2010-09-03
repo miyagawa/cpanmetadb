@@ -38,17 +38,11 @@ class MainHandler(webapp.RequestHandler):
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
-    if version is None:
-      version = '0.9'
     query = Package.all()
     query.filter('name = ', urllib.unquote(package))
     package = query.get()
     if package != None:
-      if version == '0.9':
-        self.response.headers['Content-Type'] = 'text/x-yaml'
-        self.response.out.write("---\ndist: %s\nversion: %s\n" % (package.distribution, package.version))
-        return
-      elif version == '1.0':
+      if version == '1.0':
         self.response.headers['Content-Type'] = 'text/x-yaml'
         self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (package.distribution, package.version))
         return
@@ -68,9 +62,9 @@ class FetchPackagesHandler(webapp.RequestHandler):
 
     is_recent = []
     if (not bootstrap):
-      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-6h.yaml")
+      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-1W.yaml")
       if result.status_code != 200:
-        logging.error('Download RECENT-6h.yaml FAIL')
+        logging.error('Download RECENT-1W.yaml FAIL')
         self.response.out.write(result.content)
         return
     
@@ -138,7 +132,7 @@ class UpdatedPackagesHandler(webapp.RequestHandler):
     self.response.out.write("Success")
 
 def main():
-  application = webapp.WSGIApplication([(r'(?:/v([0-9\.]+))?/package/(.*)', PackageHandler),
+  application = webapp.WSGIApplication([(r'/v([0-9\.]+)/package/(.*)', PackageHandler),
                                         ('/work/fetch_packages/?(.*)', FetchPackagesHandler),
                                         ('/work/update_packages', UpdatedPackagesHandler),
                                         (r'/', MainHandler)
