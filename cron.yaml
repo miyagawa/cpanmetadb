@@ -1,7 +1,7 @@
 cron:
 - description: Fetch 02packages and update
   url: /work/fetch_packages
-  schedule: every 1 hours synchronized
+  schedule: every 2 hours synchronized
 - description: Rescan 02packages
   url: /work/fetch_packages/bootstrap
   schedule: every monday 23:10
