@@ -62,9 +62,9 @@ class FetchPackagesHandler(webapp.RequestHandler):
 
     is_recent = []
     if (not bootstrap):
-      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-1W.yaml")
+      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-1d.yaml")
       if result.status_code != 200:
-        logging.error('Download RECENT-1W.yaml FAIL')
+        logging.error('Download RECENT-1d.yaml FAIL')
         self.response.out.write(result.content)
         return
     
