@@ -49,30 +49,48 @@ class PackageHandler(webapp.RequestHandler):
     self.response.set_status(404)
 
 class FetchPackagesHandler(webapp.RequestHandler):
+  hosts = [
+    'http://cpan.cpantesters.org',
+    'http://cpan.hexten.net',
+    'http://cpan.dagolden.com',
+  ]
+
   @work_queue_only
   def get(self, bootstrap):
-    logging.info("Begin downloading 02packages.details.txt.gz")
-    packages = urlfetch.fetch("http://cpan.cpantesters.org/modules/02packages.details.txt.gz")
-    if packages.status_code != 200:
-      logging.error('Download 02packages.details.txt.gz FAIL')
-      self.response.out.write("FAIL")
-      return
+    for host in self.hosts:
+      logging.info("Begin downloading 02packages.details.txt.gz from %s" % host)
 
-    logging.info('Download 02packages.details.txt.gz succeed. Last-Modified: %s' % packages.headers['Last-Modified'])
+      status = None
+      try:
+        packages = urlfetch.fetch("%s/modules/02packages.details.txt.gz" % host)
+        status = packages.status_code
+      except:
+        status = 500
 
-    is_recent = []
-    if (not bootstrap):
-      result = urlfetch.fetch("http://cpan.cpantesters.org/authors/RECENT-1d.yaml")
-      if result.status_code != 200:
-        logging.error('Download RECENT-1d.yaml FAIL')
-        self.response.out.write(result.content)
-        return
+      if status != 200:
+        logging.error('Download 02packages.details.txt.gz from %s FAIL' % host)
+        self.response.out.write("FAIL")
+        continue
+
+      logging.info('Download 02packages.details.txt.gz from %s succeed. Last-Modified: %s' % (host, packages.headers['Last-Modified']))
+
+      is_recent = []
+      if (not bootstrap):
+        result = urlfetch.fetch("%s/authors/RECENT-1d.yaml" % host)
+        if result.status_code != 200:
+          logging.error('Download RECENT-1d.yaml FAIL')
+          self.response.out.write(result.content)
+          continue
     
-      recent = yaml.load(result.content)
-      for update in recent['recent']:
-        path = re.sub(r'^id/', r'', update['path'])
-        is_recent.append(path)
-    
+        recent = yaml.load(result.content)
+        for update in recent['recent']:
+          path = re.sub(r'^id/', r'', update['path'])
+          is_recent.append(path)
+
+      self.update_packages(packages, is_recent, bootstrap)
+      break
+
+  def update_packages(self, packages, is_recent, bootstrap):
     file = gzip.GzipFile(fileobj = StringIO.StringIO(packages.content))
 
     header_is_done = False
