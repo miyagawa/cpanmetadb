@@ -50,7 +50,8 @@ class PackageHandler(webapp.RequestHandler):
 
 class FetchPackagesHandler(webapp.RequestHandler):
   hosts = [
-    'http://cpan.cpantesters.org',
+#    'http://cpan.cpantesters.org',
+    'http://cpan.metacpan.org',
     'http://cpan.hexten.net',
     'http://cpan.dagolden.com',
   ]
