@@ -39,9 +39,8 @@ class MainHandler(webapp.RequestHandler):
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
-    if version == '1.1':
-      return self.get_metacpan(version, package)
-    return self.get_db(version, package)
+    return self.get_metacpan(version, package)
+#    return self.get_db(version, package)
 
   def get_json(self, url):
     res = urlfetch.fetch(url)
