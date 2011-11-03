@@ -5,6 +5,7 @@ from google.appengine.ext.webapp import util
 from google.appengine.api import urlfetch, users
 from google.appengine.api.labs import taskqueue
 import re, gzip, StringIO, logging, urllib, yaml
+import simplejson as json
 
 def work_queue_only(func):
   """Decorator that only allows a request if from cron job, task, or an admin.
@@ -38,6 +39,34 @@ class MainHandler(webapp.RequestHandler):
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
+    return self.get_db(version, package)
+
+  def get_json(self, url):
+    res = urlfetch.fetch(url)
+    return json.loads(res.content)
+
+  def get_metacpan(self, version, package):
+    package = urllib.unquote(package)
+    dist = None
+    try:
+      meta = self.get_json('http://api.metacpan.org/module/%s' % package)
+      if meta['distribution']:
+        dist = self.get_json('http://api.metacpan.org/release/%s' % meta['distribution'])
+    except Exception, e:
+      logging.exception(e)
+    if dist:
+      if version == '1.0':
+        distfile = re.sub('.*/authors/id/', '', dist['download_url'])
+        version = 'undef'
+        for module in meta['module']:
+          if str(module['name']) == package:
+            version = module.get('version', 'undef')
+        self.response.headers['Content-Type'] = 'text/x-yaml'
+        self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (distfile, version))
+        return
+    self.response.set_status(404)
+
+  def get_db(self, version, package):
     query = Package.all()
     query.filter('name = ', urllib.unquote(package))
     package = query.get()
