@@ -2,7 +2,7 @@
 
 from google.appengine.ext import webapp, db
 from google.appengine.ext.webapp import util
-from google.appengine.api import urlfetch, users
+from google.appengine.api import urlfetch, users, memcache
 from google.appengine.api.labs import taskqueue
 import re, gzip, StringIO, logging, urllib, yaml
 import simplejson as json
@@ -39,31 +39,53 @@ class MainHandler(webapp.RequestHandler):
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
+    if version == '1.1':
+      return self.get_metacpan(version, package)
     return self.get_db(version, package)
 
   def get_json(self, url):
     res = urlfetch.fetch(url)
     return json.loads(res.content)
 
-  def get_metacpan(self, version, package):
-    package = urllib.unquote(package)
-    dist = None
+  def memcached(func):
+    def decorated(*args):
+      key = ':'.join((func.__name__, args[1]))
+      cached = memcache.get(key)
+      if cached is not None:
+        logging.debug('Cache hit: %s' % args[1])
+        return cached
+      logging.debug('Cache MISS: %s' % args[1])
+      val = func(*args)
+      memcache.set(key, val, time=3600)
+      return val
+    return decorated
+
+  @memcached
+  def fetch_metacpan(self, package):
     try:
       meta = self.get_json('http://api.metacpan.org/module/%s' % package)
-      if meta['distribution']:
+      if 'distribution' in meta:
         dist = self.get_json('http://api.metacpan.org/release/%s' % meta['distribution'])
-    except Exception, e:
-      logging.exception(e)
-    if dist:
-      if version == '1.0':
         distfile = re.sub('.*/authors/id/', '', dist['download_url'])
         version = 'undef'
         for module in meta['module']:
           if str(module['name']) == package:
             version = module.get('version', 'undef')
+        return { 'distfile': distfile, 'version': version }
+    except Exception, e:
+      logging.exception(e)
+    return 0  # for memcache
+
+  def get_metacpan(self, version, package):
+    package = urllib.unquote(package)
+    try:
+      module = self.fetch_metacpan(package)
+      if module:
         self.response.headers['Content-Type'] = 'text/x-yaml'
-        self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (distfile, version))
+        self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (module['distfile'], module['version']))
         return
+    except Exception, e:
+      logging.exception(e)
     self.response.set_status(404)
 
   def get_db(self, version, package):
@@ -71,10 +93,9 @@ class PackageHandler(webapp.RequestHandler):
     query.filter('name = ', urllib.unquote(package))
     package = query.get()
     if package != None:
-      if version == '1.0':
-        self.response.headers['Content-Type'] = 'text/x-yaml'
-        self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (package.distribution, package.version))
-        return
+      self.response.headers['Content-Type'] = 'text/x-yaml'
+      self.response.out.write("---\ndistfile: %s\nversion: %s\n" % (package.distribution, package.version))
+      return
     self.response.set_status(404)
 
 class FetchPackagesHandler(webapp.RequestHandler):
