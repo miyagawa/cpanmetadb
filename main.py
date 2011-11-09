@@ -39,8 +39,11 @@ class MainHandler(webapp.RequestHandler):
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
-    return self.get_metacpan(version, package)
+#    return self.get_metacpan(version, package)
 #    return self.get_db(version, package)
+    self.response.set_status(302)
+    self.response.headers['Location'] = 'http://cpanmetadb.plackperl.org/v1.0/package/' + urllib.unquote(package)
+    self.response.out.write('Redirecting')
 
   def get_json(self, url):
     res = urlfetch.fetch(url)
