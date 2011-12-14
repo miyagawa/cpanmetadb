@@ -35,7 +35,10 @@ class Package(db.Model):
 
 class MainHandler(webapp.RequestHandler):
   def get(self):
-    self.response.out.write(open('./index.html').read())
+    self.response.set_status(302)
+    self.response.headers['Location'] = 'http://cpanmetadb.plackperl.org/'
+    self.response.out.write('Redirecting')
+    #self.response.out.write(open('./index.html').read())
   
 class PackageHandler(webapp.RequestHandler):
   def get(self, version, package):
